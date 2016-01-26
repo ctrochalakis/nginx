@@ -502,6 +502,20 @@ ngx_resolve_name_locked(ngx_resolver_t *r, ngx_resolver_ctx_t *ctx)
 
         if (rn->waiting) {
 
+            if (ctx->event == NULL) {
+                ctx->event = ngx_resolver_calloc(r, sizeof(ngx_event_t));
+                if (ctx->event == NULL) {
+                    return NGX_ERROR;
+                }
+
+                ctx->event->handler = ngx_resolver_timeout_handler;
+                ctx->event->data = ctx;
+                ctx->event->log = r->log;
+                ctx->ident = -1;
+
+                ngx_add_timer(ctx->event, ctx->timeout);
+            }
+
             ctx->next = rn->waiting;
             rn->waiting = ctx;
             ctx->state = NGX_AGAIN;
@@ -665,6 +679,18 @@ ngx_resolve_addr(ngx_resolver_ctx_t *ctx)
         }
 
         if (rn->waiting) {
+
+            ctx->event = ngx_resolver_calloc(r, sizeof(ngx_event_t));
+            if (ctx->event == NULL) {
+                return NGX_ERROR;
+            }
+
+            ctx->event->handler = ngx_resolver_timeout_handler;
+            ctx->event->data = ctx;
+            ctx->event->log = r->log;
+            ctx->ident = -1;
+
+            ngx_add_timer(ctx->event, ctx->timeout);
 
             ctx->next = rn->waiting;
             rn->waiting = ctx;
