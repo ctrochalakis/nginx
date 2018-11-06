@@ -115,6 +115,7 @@ struct ngx_http_v2_connection_s {
     ngx_http_connection_t           *http_connection;
 
     ngx_uint_t                       processing;
+    ngx_uint_t                       frames;
 
     size_t                           send_window;
     size_t                           recv_window;
