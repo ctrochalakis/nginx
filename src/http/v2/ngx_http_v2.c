@@ -1969,7 +1969,9 @@ ngx_http_v2_state_settings(ngx_http_v2_connection_t *h2c, u_char *pos,
         return ngx_http_v2_connection_error(h2c, NGX_HTTP_V2_SIZE_ERROR);
     }
 
-    ngx_http_v2_send_settings(h2c, 1);
+    if (ngx_http_v2_send_settings(h2c, 1) == NGX_ERROR) {
+        return ngx_http_v2_connection_error(h2c, NGX_HTTP_V2_INTERNAL_ERROR);
+    }
 
     return ngx_http_v2_state_settings_params(h2c, pos, end);
 }
@@ -2452,6 +2454,13 @@ ngx_http_v2_send_settings(ngx_http_v2_connection_t *h2c, ngx_uint_t ack)
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, h2c->connection->log, 0,
                    "http2 send SETTINGS frame ack:%ui", ack);
+
+    if (h2c->frames++ > 10000) {
+        ngx_log_error(NGX_LOG_INFO, h2c->connection->log, 0,
+                     "http2 flood detected");
+        h2c->connection->error = 1;
+        return NGX_ERROR;
+    }
 
     frame = ngx_palloc(h2c->pool, sizeof(ngx_http_v2_out_frame_t));
     if (frame == NULL) {
